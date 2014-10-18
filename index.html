@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" type="image/ico" href="http://www.openbitlab.com/media/favicon.ico"/>
+
+    <title>OpenBitLab.com - Transaction confirmation alarm</title>
+
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/cover.css" rel="stylesheet">
+	<link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+      <div class="container">
+        <div class="cover-container">
+          <div class="clearfix">
+            <div class="inner">
+              <h3 class="masthead-brand"></h3>
+				<ul class="nav masthead-nav">
+				  <li><a href="http://openbitlab.com" target="_blank">Openbitlab.com <i class="fa fa-arrow-right"></i></a></li>
+				</ul>
+            </div>
+          </div>
+          <div align="center">
+            <h1><i class="fa fa-clock-o"></i> Transaction confirmation alarm</h1>
+			<p id="desc">Tired of waiting for bitcoin/dogecoin/litecoin transaction confirmations hitting F5 all the time? This page allows you to keep tracking of 
+				confirmations for your bitcoin/dogecoin/litecoin transaction; after setup and after the reaching
+				of confirmation target, the page will produce a notification.</p>
+
+			<br>
+
+			<form role="form" class="form-horizontal" id="form" style="width: 100%">
+			  <div class="form-group">
+				<label for="txhash" class="col-sm-2 control-label">Hash</label>
+				<div class="col-sm-10">
+					<input type="text" class="form-control" id="txhash" name="txhash" placeholder="Transaction hash (leaving it blank the counting starts from current block)">
+				</div>
+			  </div>
+			  <div class="form-group" id="txconfdiv">
+				<label for="txconf" class="col-sm-2 control-label">Confirmations</label>
+				<div class="col-sm-10">
+					<input type="number" class="form-control" id="txconf" name="txconf" value="3" placeholder="Numer of confirmations needed">
+				</div>
+			  </div>
+
+				<div class="form-group">
+					<label for="txcoin" class="col-sm-2 control-label">Coin</label>
+
+					<div class="col-sm-10">
+						<select id="txcoin" name="txcoin" class="form-control">
+						  <option>BTC</option>
+						  <option>DOGE</option>
+						  <option>LTC</option>
+						  <option>BTCTEST</option>
+						  <option>DOGETEST</option>
+						  <option>LTCTEST</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="form-group">
+					<div class="col-sm-offset-2 col-sm-10">
+					  <div class="checkbox">
+						<label>
+						  <input type="checkbox" id="txeach" name="txeach" checked> Alarm on each new block
+						</label>
+					  </div>
+					</div>
+   			    </div>
+				<div class="form-group">
+					<div class="col-sm-offset-2 col-sm-10">
+					  <div class="checkbox">
+						<label>
+						  <input type="checkbox" id="txbeep" name="txbeep" checked> Enalbe audio notification
+						</label>
+					  </div>
+					</div>
+   			    </div>
+				<br>
+			  <button type="button" class="btn btn-lg btn-primary" id="txsubmit"><i class="fa fa-clock-o"></i> Start watching</button>
+			</form>
+
+
+			<div id="loader" style="display: none">
+				<canvas class="loader" id="loadercanvas"></canvas>
+				<p id="loadertext"></p>
+
+				<div align="left">
+				    <a class="btn btn-md" onclick="javascript:location.reload()" id="txback"><i class="fa fa-arrow-left"></i> Go back</a>
+				</div>
+			</div>
+          </div>
+
+		  <br><br>
+		  <div align="center" style="">
+			<p>Donate BTC to <a href="https://blockchain.info/address/13gbybVyaYy5yA7Z7si2zJfo2Aat6d7c8z" target="_blank">13gbybVyaYy5yA7Z7si2zJfo2Aat6d7c8z</a></p>
+			<p align="center">&copy; 2014 OpenBitLab Team -
+				<a href="https://facebook.com/openbitlab" target="_blank"><i class="fa fa-facebook"></i> Facebook</a> -
+				<a href="https://twitter.com/OpenBitLab" target="_blank"><i class="fa fa-twitter"></i> Twitter</a> -
+				<a href="http://github.com/openbitlab" target="_blank"><i class="fa fa-github"></i> Github</a>
+			</p>
+          </div>
+        </div>
+    </div>
+
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+	<script src="js/jquery.classyloader.min.js"></script>
+
+	<script>
+		var loader; 
+		var txconf;
+		var txhash;
+		var txeach;
+		var txcurr;
+		var txbeep;
+		var txcoin = 'BTC';
+		var notificationSupport;
+		var run = false;
+		var tout;
+		var startblock = false;
+
+		$('#loader').css ("display", "none");
+		notificationSupport = ("Notification" in window);
+
+		if (notificationSupport && Notification.permission !== 'denied' && Notification.permission !== 'granted')
+		{
+			Notification.requestPermission(function (permission) 
+			{
+				if (!('permission' in Notification)) 
+					Notification.permission = permission;
+			});
+		}
+
+
+
+		function playSound(soundObj) 
+		{
+			var audio = new Audio('media/beep.wav');
+			audio.play();
+		}
+
+		function notificate (title, summary, icon)
+		{
+			if(txbeep) playSound ('beep');
+
+			if (notificationSupport)
+			{
+				var notification = new Notification(title, { "icon": icon, "body": summary });
+			}
+			else
+			{
+				alert (title + "\n" + summary);
+			}
+		}
+
+		function makeNotification ()
+		{
+			if (txcurr >= txconf)
+			{
+				notificate ("Confirmation done", 'The '+txcoin+' transaction is confirmed ('+txconf+' confirmations)', 'http://openbitlab.com/media/logo.png');
+			}
+			else if (txeach)
+			{
+				notificate ("New confirmation", 'Reached '+txcurr+' of '+txconf+' total confirmations ('+txcoin+')', 'http://openbitlab.com/media/logo.png');
+			}
+
+			updateConfirmations ();
+		}
+
+		function updateConfirmations ()
+		{
+			var percentage;
+			if (txcurr < txconf)
+			{
+				$('#loadertext').html ('<i class="fa fa-clock-o"></i> Reached '+txcurr+' of '+txconf+' total confirmations ('+txcoin+')');
+				percentage = 100 * txcurr / txconf;
+			}
+			else
+			{
+				run = false;
+				$('#loadertext').html ('<i class="fa fa-check"></i> The '+txcoin+' transaction is confirmed ('+txconf+' confirmations)');
+				percentage = 100;
+			}
+			
+			loader.draw (percentage);
+		}
+
+
+
+		function updateFromHash ()
+		{
+			if (!run)
+			{
+				window.clearInterval(tout)
+
+				return;
+			}
+
+			$.get("https://chain.so/api/v2/is_tx_confirmed/"+txcoin+"/"+txhash, function (response)
+			{
+				if (response.data.status != "fail")
+				{
+					var txcurr2 = response.data.confirmations;
+					updateConfirmations ();
+
+					if (txcurr2 != txcurr)
+					{
+						txcurr = txcurr2;
+						updateConfirmations ();
+						makeNotification ();
+					}
+				}
+				else
+				{
+					window.clearInterval (tout);
+					updateFromConf ();
+					tout = setInterval(updateFromConf, 30000);
+				}
+			}, "json" )
+			.fail(function(jqXHR, textStatus, errorThrown) 
+			{
+				window.clearInterval (tout);
+				updateFromConf ();
+				tout = setInterval(updateFromConf, 30000);
+			});
+		}	
+
+
+		function updateFromConf ()
+		{
+			if (!run)
+			{
+				window.clearInterval(tout)
+
+				return;
+			}
+
+			$.get("https://chain.so/api/v2/get_info/"+txcoin+"/", function (response)
+			{
+				if (response.data.status != "fail")
+				{
+					var txblock = response.data.blocks;
+					var diff = 0;
+
+					if (!startblock)
+						startblock = txblock;
+
+					txcurr2 = txblock - startblock;
+
+					updateConfirmations ();
+
+					if (txcurr2 != txcurr)
+					{
+						txcurr = txcurr2;
+						updateConfirmations ();
+						makeNotification ();
+					}
+				}
+			}, "json" );
+		}	
+
+
+		$("#txsubmit").click (function ()
+		{
+			txcurr = 0;
+			txconf = $('#txconf').val ();
+			txhash = $('#txhash').val ();
+			txeach = $('#txeach').is (":checked");
+			txbeep = $('#txbeep').is (":checked");
+			txcoin = $("#txcoin option:selected").text ();
+			run = true;
+
+
+			if (isNaN(txconf) || txconf.length == 0)
+			{
+				$('#txconfdiv').addClass ("has-error");
+				return;
+			}
+
+
+			$('#form').css ("display", "none");
+			$('#loader').css ("display", "block");
+			$('#desc').css ("display", "none");
+
+
+            loader = $('#loadercanvas').ClassyLoader({
+		            percentage: 100,
+		            speed: 20,
+		            fontSize: '50px',
+		            diameter: 85,
+                    lineColor: '#428BCA',
+					fontColor: '#ddd',
+		            remainingLineColor: 'rgba(200,200,200,0.4)',
+		            lineWidth: 20
+            });
+
+			// txhash valido, scarica i dati
+			if (txhash.length != 0)
+			{
+				tout = setInterval(updateFromHash, 30000);
+
+				updateFromHash ();
+			}
+			else
+			{
+				txhash = false;
+				tout = setInterval(updateFromConf, 30000);
+
+				updateFromConf ();
+
+			}
+			updateConfirmations ();
+		});
+	</script>
+<script>
+
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-43862044-9', 'auto', {'allowLinker': true});
+  ga('require', 'linker');
+  ga('linker:autoLink', ['openbitlab.com'] );
+  ga('send', 'pageview');
+</script>
+  </body>
+</html>

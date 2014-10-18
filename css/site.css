@@ -1,0 +1,116 @@
+/*
+ * Globals
+ */
+
+
+
+
+
+
+/* Custom default button */
+/*.btn-default,
+.btn-default:hover,
+.btn-default:focus {
+  color: #333;
+  text-shadow: none; /* Prevent inheritence from `body` *//*
+  background-color: #fff;
+  border: 1px solid #fff;
+}*/
+
+
+/*
+ * Base structure
+ */
+
+body {
+	background-color: #fff;
+}
+
+
+.container {
+  padding-left: 5%;
+  padding-right: 5%;
+  background-color: #fff;
+}
+
+/* Padding for spacing */
+.inner {
+  padding: 15px;
+}
+
+.footer {
+  color: #999;
+}
+
+/*
+ * Header
+ */
+.masthead {
+  color: #fff;
+  background-color: #333;
+  width: 100%;
+  padding-left: 10%;
+  padding-right: 10%;
+}
+
+.masthead > a, a:focus, a:hover {
+  color: #fff;
+}
+
+.masthead-brand {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.masthead-nav > li {
+  display: inline-block;
+}
+.masthead-nav > li + li {
+  margin-left: 20px;
+}
+.masthead-nav > li > a {
+  padding-right: 0;
+  padding-left: 0;
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff; /* IE8 proofing */
+  color: rgba(255,255,255,.75);
+  border-bottom: 2px solid transparent;
+}
+.masthead-nav > li > a:hover,
+.masthead-nav > li > a:focus {
+  background-color: transparent;
+  border-bottom-color: rgba(255,255,255,.25);
+}
+.masthead-nav > .active > a,
+.masthead-nav > .active > a:hover,
+.masthead-nav > .active > a:focus {
+  color: #fff;
+  border-bottom-color: #fff;
+}
+
+@media (min-width: 768px) {
+  .masthead-brand {
+    float: left;
+  }
+  .masthead-nav {
+    float: right;
+  }
+}
+
+
+.osname {
+	font-size: 120%;
+}
+
+
+
+a:hover,a:active
+{
+	color: #aaa;
+}
+
+a:link,a:visited
+{
+	color: #428BCA;
+}
